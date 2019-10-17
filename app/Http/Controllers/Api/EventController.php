@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Event;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Libraries\Constant;
+use DateTime;
+use Carbon\CarbonPeriod;
 
 class EventController extends Controller
 {
@@ -38,7 +41,35 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        Event::truncate();
+        $begin = new DateTime(date('Y-m-d', strtotime($request->dateFrom)));
+        $end = new DateTime(date('Y-m-d', strtotime($request->dateTo)));
+        $days = [
+            'Monday'=>Constant::MONDAY,
+            'Tuesday'=>Constant::TUESDAY,
+            'Wednesday'=>Constant::WEDNESDAY,
+            'Thursday'=>Constant::THURSDAY,
+            'Friday'=>Constant::FRIDAY,
+            'Saturday'=>Constant::SATURDAY,
+            'Sunday'=>Constant::SUNDAY
+        ];
+
+        try{
+            for($i = $begin; $i <= $end; $i->modify('+1 day')){
+                    $currentDay = $i->format("l");
+                    $currentDate = $i->format("Y-m-d");
+                    if(in_array($days[$currentDay], $request->dayOptions)){
+                        $event = new Event();
+                                $event->title = $request->eventTitle;
+                                $event->date = date('Y-m-d', strtotime($currentDate));
+                                $event->save();
+                    }
+            }
+            return response()->json(['success' => 'success'], 200);
+        }catch(Exception $e) {
+            return response()->json(['error' => 'invalid'], 401);
+            return $e->getMessage();
+        }
     }
 
     /**
